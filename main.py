@@ -9,7 +9,10 @@ from mg import Grammer
 
 def main(fd: io.TextIOBase) -> None:
     grammer = Grammer(fd)
-    matrix = grammer.build_matrix()
+    # matrix = grammer.build_related_matrix()
+    rlist = grammer.build_related_list()
+    for i, r in enumerate(rlist):
+        print(i, r)
     # print(matrix)
 
 

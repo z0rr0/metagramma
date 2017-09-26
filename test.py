@@ -28,7 +28,7 @@ class GrammerTestCase(unittest.TestCase):
             [0, 0, 0, 0, 1],
             [0, 0, 0, 1, 0],
         ]
-        matrix = self.grammer.build_matrix()
+        matrix = self.grammer.build_related_matrix()
         self.assertEqual(matrix, expected)
 
 
