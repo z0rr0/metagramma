@@ -3,7 +3,36 @@
 import io
 import unittest
 
-from mg import Grammer
+from mg import Grammer, bisect_left
+
+
+class HelpersTestCase(unittest.TestCase):
+
+    def test_bisect(self):
+        items = sorted(
+            [
+                'a',
+                'b',
+                'd',
+                'aa',
+                'ac',
+                'bb'
+            ],
+            key=lambda c: (len(c), c)
+        )
+        values = (
+            ('a', 0, []),
+            ('b', 0, []),
+            ('ab', 0, []),
+            ('b', 1, items),
+            ('c', 2, items),
+            ('aa', 3, items),
+            ('ab', 4, items),
+            ('aaa', 6, items),
+        )
+        for x, i, a in values:
+            j = bisect_left(a, x)
+            self.assertEqual(i, j, 'invalid {}!={}, x={} a={}'.format(i, j, x, a))
 
 
 class GrammerTestCase(unittest.TestCase):
