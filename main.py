@@ -15,9 +15,8 @@ def main(ifd: io.TextIOBase, sfd: io.TextIOBase) -> None:
         print(json.dumps(rlist))
     elif sfd:
         rlist = json.load(sfd)
-        print('kk', rlist)
     else:
-        raise ValueError('set init or sorce file')
+        raise ValueError('set init or source file')
 
 
 if __name__ == '__main__':
