@@ -1,5 +1,4 @@
 #!/usr/bin/env python3.6
-import bisect
 import io
 
 from datetime import datetime
@@ -43,54 +42,29 @@ class Grammer(object):
         self.matrix = []
         self.rlist = []
 
-    @staticmethod
-    def _compare(w1: str, w2: str) -> int:
-        if len(w1) == len(w2):
-            if len(set(w1).intersection(set(w2))) == len(w1) - 1:
-                return 1
-        return 0
-
-    def build_related_matrix(self) -> list:
-        words = []
-        for line in self.fd:
-            words.append(line.strip())
-            row = [self._compare(words[-1], w) for w in words]
-            self.matrix.append(row)
-            for i, r in enumerate(self.matrix[:-1]):
-                r.append(row[i])
-        return self.matrix
-
-    @time_decorator
-    def build_related_list2(self) -> list:
-        for line in self.fd:
-            cw = line.strip()
-            related = [i for i, item in enumerate(self.rlist) if self._compare(cw, item[0])]
-
-            idx = len(self.rlist)
-            for j in related:
-                self.rlist[j][1].append(idx)
-            self.rlist.append((cw, related))
-        return self.rlist
-
-    @time_decorator
     def build_related_list(self) -> list:
 
-        def _candidates(x: str, items: list) -> list:
-            n = len(x)
+        def same(w1: str, w2: str) -> bool:
+            diff = 0
+            for i, s in enumerate(w1):
+                if w2[i] != s:
+                    diff += 1
+                if diff > 1:
+                    return False
+            return diff == 1
+
+        def _candidates(n: int, x: str, items: list) -> list:
             from_item = '0' * n
             to_item = '0' * (n + 1)
             a = bisect_left(items, from_item)
             b = bisect_left(items, to_item, lo=a)
-            # print('x', x, n, from_item, to_item, a, b, items)
-            return [i + a for i, item in enumerate(items[a:b]) if self._compare(x, item)]
+            return [i + a for i, item in enumerate(items[a:b]) if same(x, item)]
 
-        lines = sorted(self.fd.readlines(), key=lambda x: (len(x), x))
+        lines = [(len(x.strip()), x.strip()) for x in self.fd.readlines()]
+        lines.sort()
         handled = []
-        for line in lines:
-            cw = line.strip()
-            related = _candidates(cw, handled)
-            # if related:
-            #     print('related', related)
+        for l, cw in lines:
+            related = _candidates(l, cw, handled)
             idx = len(self.rlist)
             for j in related:
                 self.rlist[j][1].append(idx)
