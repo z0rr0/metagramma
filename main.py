@@ -1,18 +1,20 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
 
 import argparse
 import io
 import json
+import sys
 
-from mg import Grammer
+from mg import Grammer, time_decorator
 
 
-def main(ifd: io.TextIOBase, sfd: io.TextIOBase) -> None:
+@time_decorator
+def main(ifd: io.TextIOBase, sfd: io.TextIOBase, output: io.TextIOBase) -> None:
     if ifd:
         # init
         grammer = Grammer(ifd)
         rlist = grammer.build_related_list()
-        print(json.dumps(rlist))
+        json.dump(rlist, output)
     elif sfd:
         rlist = json.load(sfd)
     else:
@@ -28,11 +30,18 @@ if __name__ == '__main__':
         help='init dictionary file'
     )
     parser.add_argument(
-        '-s',
-        dest='src_file',
+        '-d',
+        dest='db',
         type=argparse.FileType('r'),
-        help='source JSON file'
+        help='prepared JSON file'
+    )
+    parser.add_argument(
+        '-o',
+        dest='output',
+        type=argparse.FileType('w'),
+        default=sys.stdout,
+        help='output file'
     )
 
     args, _ = parser.parse_known_args()
-    main(args.init_file, args.src_file)
+    main(args.init_file, args.db, args.output)

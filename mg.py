@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.6
 import io
 
+from bisect import bisect_left
 from datetime import datetime
 from functools import wraps
 
@@ -15,24 +16,22 @@ def time_decorator(f):
     return wrapper
 
 
-def bisect_left(a: list, x: str, lo=0, hi=None) -> int:
-    hi = len(a) if not hi else hi
-    compare_less = lambda k, m: len(k) < len(m) or (len(k) == len(m) and k <= m)
-
-    def bs(items: list, el: str, i, j):
-        if not items[i:j]:
-            return 0
-        elif len(items[i:j]) == 1:
-            return i if compare_less(el, items[i]) else j
-        mid = len(items[i:j]) // 2
-        idx = i + mid
-        if compare_less(el, items[idx]):
-            return bs(items, el, i, idx)
-        else:
-            return bs(items, el, idx, j)
-
-    r = bs(a, x, lo, hi)
-    return r
+def levenshtein_distance(a: str, b: str) -> int:
+    """Calculates the Levenshtein distance between a and b."""
+    n, m = len(a), len(b)
+    if n > m:
+        # Make sure n <= m, to use O(min(n,m)) space
+        a, b = b, a
+        n, m = m, n
+    current_row = range(n + 1)  # Keep current and previous row, not entire matrix
+    for i in range(1, m + 1):
+        previous_row, current_row = current_row, [i] + [0] * n
+        for j in range(1, n + 1):
+            add, delete, change = previous_row[j] + 1, current_row[j-1] + 1, previous_row[j-1]
+            if a[j-1] != b[i-1]:
+                change += 1
+            current_row[j] = min(add, delete, change)
+    return current_row[n]
     
 
 class Grammer(object):
@@ -42,32 +41,26 @@ class Grammer(object):
         self.matrix = []
         self.rlist = []
 
+    @staticmethod
+    def similar(w1: str, w2: str) -> bool:
+        if len(w1) != len(w2) or w1 == w2:
+            return False
+        return levenshtein_distance(w1, w2) == 1
+
+    @classmethod
+    def _candidates(cls, x: tuple, items: list, lengths: tuple) -> list:
+        b = bisect_left(lengths, x[0])
+        return [k + b for k, item in enumerate(items[b:]) if cls.similar(x[1], item[1])]
+
     def build_related_list(self) -> list:
-
-        def same(w1: str, w2: str) -> bool:
-            diff = 0
-            for i, s in enumerate(w1):
-                if w2[i] != s:
-                    diff += 1
-                if diff > 1:
-                    return False
-            return diff == 1
-
-        def _candidates(n: int, x: str, items: list) -> list:
-            from_item = '0' * n
-            to_item = '0' * (n + 1)
-            a = bisect_left(items, from_item)
-            b = bisect_left(items, to_item, lo=a)
-            return [i + a for i, item in enumerate(items[a:b]) if same(x, item)]
-
+        self.rlist = []
         lines = [(len(x.strip()), x.strip()) for x in self.fd.readlines()]
+        lengths = tuple(x[0] for x in lines)
         lines.sort()
-        handled = []
-        for l, cw in lines:
-            related = _candidates(l, cw, handled)
+        for i, line in enumerate(lines):
+            related = self._candidates(line, lines[:i], lengths[:i])
             idx = len(self.rlist)
             for j in related:
                 self.rlist[j][1].append(idx)
-            self.rlist.append((cw, related))
-            handled.append(cw)
+            self.rlist.append((line[1], related))
         return self.rlist
